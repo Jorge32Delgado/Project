@@ -1,5 +1,6 @@
+# Function to parse assignment statement
 function parse_assignment(input)
-    assignment_pattern = r"([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(-?\d+|[a-zA-Z_][a-zA-Z0-9_]*)\s*;"
+    assignment_pattern = r"([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(0|[1-9][0-9]*)\s*;"
     
     m = match(assignment_pattern, input)
     if m === nothing
@@ -9,10 +10,42 @@ function parse_assignment(input)
     variable = m.captures[1]
     value = m.captures[2]
     
+    if value != "0" && startswith(value, "0")
+        println("Error: Variable $variable has leading zeros.")
+        return nothing
+    end
+    
     return (variable, value)
 end
 
-# Test
+
+
+# Function to interpret the whole program
+function interpret_program(program)
+    lines = split(program, "\n")
+    assignments = []
+    variables = Dict()
+    
+    for line in lines
+        assignment = parse_assignment(line)
+        if assignment !== nothing
+            push!(assignments, assignment)
+        else
+            println("Syntax error at: $line")
+            return
+        end
+    end
+    
+    for assignment in assignments
+        interpret_assignment(assignment, variables)
+    end
+    
+    for (var, val) in pairs(variables)
+        println("$var = $val")
+    end
+end
+
+# Sample inputs
 inputs = [
     "x = 001;",
     "x_2 = 0;",
@@ -20,8 +53,3 @@ inputs = [
     "x = 1;\ny = 2;\nz = ---(x+y)*(x+-y);"
 ]
 
-for idx in 1:length(inputs)
-    println("Output $idx")
-    interpret_program(inputs[idx])
-    println()
-end
