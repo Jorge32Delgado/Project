@@ -1,15 +1,27 @@
-function interpretAssignment(assignment, variables)
-    variable, value = assignment
+function parse_assignment(input)
+    assignment_pattern = r"([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(-?\d+|[a-zA-Z_][a-zA-Z0-9_]*)\s*;"
     
-    # Check the value
-    if isdigit(value[1]) || value[1] == '-' || value[1] == '+'
-        variables[variable] = parse(Int, value)
-    elseif haskey(variables, value)
-        variables[variable] = variables[value]
-    else
-        println("Uninitialized variable: $value")
-        return false
+    m = match(assignment_pattern, input)
+    if m === nothing
+        return nothing
     end
     
-    return true  
-end 
+    variable = m.captures[1]
+    value = m.captures[2]
+    
+    return (variable, value)
+end
+
+# Test
+inputs = [
+    "x = 001;",
+    "x_2 = 0;",
+    "x = 0\ny = x;\nz = ---(x+y);",
+    "x = 1;\ny = 2;\nz = ---(x+y)*(x+-y);"
+]
+
+for idx in 1:length(inputs)
+    println("Output $idx")
+    interpret_program(inputs[idx])
+    println()
+end
