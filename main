@@ -11,5 +11,5 @@ function interpretAssignment(assignment, variables)
         return false
     end
     
-    rturn true  
+    return true  
 end 
