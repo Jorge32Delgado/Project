@@ -1,11 +1,15 @@
-function add_numbers(a, b)
-    result = a + b
-    return result
-end
-
-# Example usage:
-num1 = 10
-num2 = 20
-
-sum_result = add_numbers(num1, num2)
-println("sum is: $sum_result")
+function interpretAssignment(assignment, variables)
+    variable, value = assignment
+    
+    # Check the value
+    if isdigit(value[1]) || value[1] == '-' || value[1] == '+'
+        variables[variable] = parse(Int, value)
+    elseif haskey(variables, value)
+        variables[variable] = variables[value]
+    else
+        println("Uninitialized variable: $value")
+        return false
+    end
+    
+    rturn true  
+end 
