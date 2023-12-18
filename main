@@ -1,0 +1,11 @@
+function add_numbers(a, b)
+    result = a + b
+    return result
+end
+
+# Example usage:
+num1 = 10
+num2 = 20
+
+sum_result = add_numbers(num1, num2)
+println("sum is: $sum_result")
