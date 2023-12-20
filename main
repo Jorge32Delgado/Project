@@ -75,7 +75,7 @@ public class main {
     }
 
 
-    // Additional method for expression evaluation using JavaScript engine
+    // Additional method for expression evaluation
     private static int eval(String exp) throws ScriptException {
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("js");
