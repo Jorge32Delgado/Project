@@ -15,8 +15,6 @@ public class main {
 
     private static HashMap<String, Integer> variables = new HashMap<>();
 
-
-    
     private static String parseAssignment(String input) {
         Matcher matcher = assignmentPattern.matcher(input);
         if (!matcher.matches()) {
@@ -25,33 +23,45 @@ public class main {
 
         String variable = matcher.group(1);
         String value = matcher.group(2);
-//Addittion and subtraction 
-        if (value.contains("+") || value.contains("-")) {
-            String[] parts = value.split("\\s*\\+\\s*|\\s*\\-\\s*");
-            if (parts.length == 2 && variables.containsKey(parts[0]) && variables.containsKey(parts[1])) {
-                int x = variables.getOrDefault(parts[0], 0);
-                int y = variables.getOrDefault(parts[1], 0);
-                int result = value.contains("+") ? x + y : x - y;
-                variables.put(variable, result);
-                return variable + " = " + result;
+
+        if (literalPattern.matcher(value).matches()) {
+            variables.put(variable, Integer.parseInt(value));
+            return variable + " = " + value;
+        }
+
+        String[] parts = value.split("\\s*(\\+|\\-|\\*|\\/)\\s*");
+        if (parts.length == 2 && variables.containsKey(parts[0]) && variables.containsKey(parts[1])) {
+            int x = variables.getOrDefault(parts[0], 0);
+            int y = variables.getOrDefault(parts[1], 0);
+            int result;
+            if (value.contains("+")) {
+                result = x + y;
+            } else if (value.contains("-")) {
+                result = x - y;
+            } else if (value.contains("*")) {
+                result = x * y;
             } else {
-                return "Uninitialized variable or invalid expression";
+                if (y == 0) {
+                    return "Division by zero error";
+                }
+                result = x / y;
             }
+            variables.put(variable, result);
+            return variable + " = " + result;
         }
 
-        if (!literalPattern.matcher(value).matches() && !variables.containsKey(value)) {
-            return "Uninitialized variable '" + value + "'";
+        if (variables.containsKey(value)) {
+            variables.put(variable, variables.get(value));
+            return variable + " = " + variables.get(variable);
         }
 
-        variables.put(variable, evalExpression(value));
-        return variable + " = " + variables.get(variable);
+        return "Uninitialized variable '" + value + "'";
     }
 
 
 
 
 
-// 
     private static int evalExpression(String exp) {
         if (literalPattern.matcher(exp).matches()) {
             return Integer.parseInt(exp);
@@ -90,7 +100,7 @@ public class main {
         String[] inputs = {
                 "x = 001;",
                 "x_2 = 0;",
-                "x = 10;\ny = 5;\nz = x*y;", //addittion
+                "x = 0;\ny = x;\nz = x+y;", //addittion
                // "x = 1;\ny = 2;\nz = ---(x+y)*(x+-y);"
         };
 
