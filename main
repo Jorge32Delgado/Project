@@ -143,7 +143,7 @@ public class main {
         String[] inputs = {
                 "x = 001;",
                 "x_2 = 0;",
-                "x=1;\ny=x;---(x+y)",
+                "x=0;\ny=x;---(x+y)",
                 "x = 1;\ny = 2;\nz = ---(x+y)*(x+-y);" 
         };
 
