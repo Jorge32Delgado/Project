@@ -1,10 +1,11 @@
 import java.util.HashMap;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class main {
 
-    // Regex
+//Regex
     private static final Pattern assignmentPattern = Pattern.compile("([a-zA-Z_][a-zA-Z0-9_]*)\\s*=\\s*(.+)\\s*;");
     private static final Pattern literalPattern = Pattern.compile("0|[1-9][0-9]*");
 
@@ -24,84 +25,90 @@ public class main {
             return variable + " = " + value;
         }
 
-        if (value.contains("(") && value.contains(")")) {
-            int result = evaluateParentheses(variable, value);
-            if (result != Integer.MIN_VALUE) {
-                variables.put(variable, result);
-                return variable + " = " + result;
-            }
-            return "Invalid expression or uninitialized variable";
-        }
-
-        // Arithmetic operations
-        String[] parts = value.split("\\s*(\\+|\\-|\\*|\\/)\\s*");
-        if (parts.length == 2 && variables.containsKey(parts[0]) && variables.containsKey(parts[1])) {
-            int x = variables.get(parts[0]);
-            int y = variables.get(parts[1]);
-            int result = 0;
-            if (value.contains("+")) {
-                result = x + y;
-            } else if (value.contains("-")) {
-                result = x - y;
-            } else if (value.contains("*")) {
-                result = x * y;
-            } else {
-                if (y == 0) {
-                    return "Division by zero error";
-                }
-                result = x / y;
-            }
+        try {
+            int result = evaluateExpression(value);
             variables.put(variable, result);
             return variable + " = " + result;
+        } catch (Exception e) {
+            return "Invalid expression";
         }
-
-        if (variables.containsKey(value)) {
-            variables.put(variable, variables.get(value));
-            return variable + " = " + variables.get(variable);
-        }
-
-        return "Uninitialized variable '" + value + "'";
     }
 
-    private static int evaluateParentheses(String variable, String value) {
-        int startIndex = value.indexOf("(");
-        int endIndex = value.lastIndexOf(")");
-        String expr = value.substring(startIndex + 1, endIndex);
-        String[] parts = expr.split("\\s*(\\+|\\-|\\*|\\/)\\s*");
-        for (String part : parts) {
-            if (!literalPattern.matcher(part).matches() && !variables.containsKey(part)) {
-                return Integer.MIN_VALUE;
+    private static int evaluateExpression(String expr) {
+        Stack<Integer> operands = new Stack<>();
+        Stack<Character> operators = new Stack<>();
+
+        for (int i = 0; i < expr.length(); i++) {
+            char ch = expr.charAt(i);
+            if (ch == '(') {
+                int openCount = 1;
+                int closeCount = 0;
+                int endIndex = i;
+                while (openCount != closeCount && endIndex < expr.length() - 1) {
+                    endIndex++;
+                    if (expr.charAt(endIndex) == '(') {
+                        openCount++;
+                    } else if (expr.charAt(endIndex) == ')') {
+                        closeCount++;
+                    }
+                }
+                if (endIndex == expr.length() - 1 && openCount != closeCount) {
+                    throw new IllegalArgumentException("Invalid expression");
+                }
+                int result = evaluateExpression(expr.substring(i + 1, endIndex));
+                operands.push(result);
+                i = endIndex;
+            } else if (ch == '+' || ch == '-' || ch == '*' || ch == '/') {
+                // Handle operators
+                while (!operators.isEmpty() && hasPrecedence(ch, operators.peek())) {
+                    int result = applyOperation(operands.pop(), operands.pop(), operators.pop());
+                    operands.push(result);
+                }
+                operators.push(ch);
+            } else if (Character.isLetterOrDigit(ch)) {
+                StringBuilder sb = new StringBuilder();
+                while (i < expr.length() && (Character.isLetterOrDigit(expr.charAt(i)) || expr.charAt(i) == '_')) {
+                    sb.append(expr.charAt(i++));
+                }
+                i--;
+                String var = sb.toString();
+                if (variables.containsKey(var)) {
+                    operands.push(variables.get(var));
+                } else {
+                    throw new IllegalArgumentException("Invalid expression");
+                }
             }
         }
-        int result = 0;
-        try {
-            result = eval(expr);
-        } catch (Exception e) {
-            return Integer.MIN_VALUE;
+
+        while (!operators.isEmpty()) {
+            int result = applyOperation(operands.pop(), operands.pop(), operators.pop());
+            operands.push(result);
         }
-        return result;
+        return operands.pop();
     }
 
-    private static int eval(String expr) {
-        String[] parts = expr.split("\\s*(\\+|\\-|\\*|\\/)\\s*");
-        int result = 0;
-        if (parts.length == 2 && variables.containsKey(parts[0]) && variables.containsKey(parts[1])) {
-            int x = variables.get(parts[0]);
-            int y = variables.get(parts[1]);
-            if (expr.contains("+")) {
-                result = x + y;
-            } else if (expr.contains("-")) {
-                result = x - y;
-            } else if (expr.contains("*")) {
-                result = x * y;
-            } else {
-                if (y == 0) {
+    private static int applyOperation(int b, int a, char operator) {
+        switch (operator) {
+            case '+':
+                return a + b;
+            case '-':
+                return a - b;
+            case '*':
+                return a * b;
+            case '/':
+                if (b == 0) {
                     throw new ArithmeticException("Division by zero error");
                 }
-                result = x / y;
-            }
+                return a / b;
         }
-        return result;
+        return 0;
+    }
+
+    private static boolean hasPrecedence(char op1, char op2) {
+        if ((op1 == '*' || op1 == '/') && (op2 == '+' || op2 == '-')) {
+            return false;
+        }
+        return true;
     }
 
     private static void interpretProgram(String program) {
@@ -121,7 +128,7 @@ public class main {
         String[] inputs = {
                 "x = 001;",
                 "x_2 = 0;",
-                "x = 4;\ny = x;\nz = (x+y) // addition 
+                "x = 3;\ny = x;\nz = (-x)*(x+y);" // parenthesis
         };
 
         for (int i = 0; i < inputs.length; i++) {
