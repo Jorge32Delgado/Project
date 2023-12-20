@@ -1,17 +1,12 @@
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
-
 
 public class main {
 
-//regex
+    // Regex
     private static final Pattern assignmentPattern = Pattern.compile("([a-zA-Z_][a-zA-Z0-9_]*)\\s*=\\s*(.+)\\s*;");
     private static final Pattern literalPattern = Pattern.compile("0|[1-9][0-9]*");
-    private static final Pattern identifierPattern = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
 
     private static HashMap<String, Integer> variables = new HashMap<>();
 
@@ -29,11 +24,21 @@ public class main {
             return variable + " = " + value;
         }
 
+        if (value.contains("(") && value.contains(")")) {
+            int result = evaluateParentheses(variable, value);
+            if (result != Integer.MIN_VALUE) {
+                variables.put(variable, result);
+                return variable + " = " + result;
+            }
+            return "Invalid expression or uninitialized variable";
+        }
+
+        // Arithmetic operations
         String[] parts = value.split("\\s*(\\+|\\-|\\*|\\/)\\s*");
         if (parts.length == 2 && variables.containsKey(parts[0]) && variables.containsKey(parts[1])) {
-            int x = variables.getOrDefault(parts[0], 0);
-            int y = variables.getOrDefault(parts[1], 0);
-            int result;
+            int x = variables.get(parts[0]);
+            int y = variables.get(parts[1]);
+            int result = 0;
             if (value.contains("+")) {
                 result = x + y;
             } else if (value.contains("-")) {
@@ -58,39 +63,55 @@ public class main {
         return "Uninitialized variable '" + value + "'";
     }
 
-
-
-
-
-    private static int evalExpression(String exp) {
-        if (literalPattern.matcher(exp).matches()) {
-            return Integer.parseInt(exp);
-        } else {
-            // Calculate the value of z directly based on x and y
-            int x = variables.getOrDefault("x", 0);
-            int y = variables.getOrDefault("y", 0);
-            int z = -((x + y) * (x - y));
-            return z;
+    private static int evaluateParentheses(String variable, String value) {
+        int startIndex = value.indexOf("(");
+        int endIndex = value.lastIndexOf(")");
+        String expr = value.substring(startIndex + 1, endIndex);
+        String[] parts = expr.split("\\s*(\\+|\\-|\\*|\\/)\\s*");
+        for (String part : parts) {
+            if (!literalPattern.matcher(part).matches() && !variables.containsKey(part)) {
+                return Integer.MIN_VALUE;
+            }
         }
+        int result = 0;
+        try {
+            result = eval(expr);
+        } catch (Exception e) {
+            return Integer.MIN_VALUE;
+        }
+        return result;
     }
 
-
-    // Additional method for expression evaluation
-    private static int eval(String exp) throws ScriptException {
-        ScriptEngineManager manager = new ScriptEngineManager();
-        ScriptEngine engine = manager.getEngineByName("js");
-        return ((Number) engine.eval(exp)).intValue();
+    private static int eval(String expr) {
+        String[] parts = expr.split("\\s*(\\+|\\-|\\*|\\/)\\s*");
+        int result = 0;
+        if (parts.length == 2 && variables.containsKey(parts[0]) && variables.containsKey(parts[1])) {
+            int x = variables.get(parts[0]);
+            int y = variables.get(parts[1]);
+            if (expr.contains("+")) {
+                result = x + y;
+            } else if (expr.contains("-")) {
+                result = x - y;
+            } else if (expr.contains("*")) {
+                result = x * y;
+            } else {
+                if (y == 0) {
+                    throw new ArithmeticException("Division by zero error");
+                }
+                result = x / y;
+            }
+        }
+        return result;
     }
-
 
     private static void interpretProgram(String program) {
         String[] lines = program.split("\n");
         for (String line : lines) {
             String result = parseAssignment(line);
-            if (!result.equals("error") && !result.isEmpty()) {
+            if (!result.equals("Syntax error") && !result.isEmpty()) {
                 System.out.println(result);
-            } else if (result.equals("error")) {
-                System.out.println("error");
+            } else if (result.equals("Syntax error")) {
+                System.out.println("Syntax error");
                 return;
             }
         }
@@ -100,8 +121,7 @@ public class main {
         String[] inputs = {
                 "x = 001;",
                 "x_2 = 0;",
-                "x = 0;\ny = x;\nz = x+y;", //addittion
-               // "x = 1;\ny = 2;\nz = ---(x+y)*(x+-y);"
+                "x = 4;\ny = x;\nz = (x+y) // addition 
         };
 
         for (int i = 0; i < inputs.length; i++) {
