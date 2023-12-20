@@ -4,7 +4,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class main {
-
 //Regex
     private static final Pattern assignmentPattern = Pattern.compile("([a-zA-Z_][a-zA-Z0-9_]*)\\s*=\\s*(.+)\\s*;");
     private static final Pattern literalPattern = Pattern.compile("0|[1-9][0-9]*");
@@ -37,9 +36,16 @@ public class main {
     private static int evaluateExpression(String expr) {
         Stack<Integer> operands = new Stack<>();
         Stack<Character> operators = new Stack<>();
+        boolean negation = false;
 
         for (int i = 0; i < expr.length(); i++) {
             char ch = expr.charAt(i);
+            if (ch == '-') {
+                if (i == 0 || expr.charAt(i - 1) == '(') {
+                    negation = !negation;
+                    continue;
+                }
+            }
             if (ch == '(') {
                 int openCount = 1;
                 int closeCount = 0;
@@ -56,7 +62,8 @@ public class main {
                     throw new IllegalArgumentException("Invalid expression");
                 }
                 int result = evaluateExpression(expr.substring(i + 1, endIndex));
-                operands.push(result);
+                operands.push(negation ? -result : result);
+                negation = false;
                 i = endIndex;
             } else if (ch == '+' || ch == '-' || ch == '*' || ch == '/') {
                 // Handle operators
@@ -68,12 +75,13 @@ public class main {
             } else if (Character.isLetterOrDigit(ch)) {
                 StringBuilder sb = new StringBuilder();
                 while (i < expr.length() && (Character.isLetterOrDigit(expr.charAt(i)) || expr.charAt(i) == '_')) {
-                    sb.append(expr.charAt(i++));
+                    sb.append(expr.charAt(i++)); //Negation
                 }
                 i--;
                 String var = sb.toString();
                 if (variables.containsKey(var)) {
-                    operands.push(variables.get(var));
+                    operands.push(negation ? -variables.get(var) : variables.get(var));
+                    negation = false;
                 } else {
                     throw new IllegalArgumentException("Invalid expression");
                 }
@@ -128,7 +136,7 @@ public class main {
         String[] inputs = {
                 "x = 001;",
                 "x_2 = 0;",
-                "x = 3;\ny = x;\nz = (-x)*(x+y);" // parenthesis
+                "x = 3;\ny = x;\nz = (-x)*(x+y);" // one negation
         };
 
         for (int i = 0; i < inputs.length; i++) {
